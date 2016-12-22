@@ -47,12 +47,15 @@
 - (instancetype)initWithData:(NSData *)audioData audioViewAttributes:(JSQAudioMediaViewAttributes *)audioViewAttributes
 {
     NSParameterAssert(audioViewAttributes != nil);
-
+    
     self = [super init];
     if (self) {
         _cachedMediaView = nil;
         _audioData = [audioData copy];
         _audioViewAttributes = audioViewAttributes;
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(stopAudio) name:@"didCloseJSQMessagesViewController" object:nil];
+        
     }
     return self;
 }
@@ -70,6 +73,14 @@
 - (instancetype)init
 {
     return [self initWithData:nil audioViewAttributes:[[JSQAudioMediaViewAttributes alloc] init]];
+}
+
+- (void)stopAudio{
+    if (self.audioPlayer.playing) {
+        self.playButton.selected = NO;
+        [self stopProgressTimer];
+        [self.audioPlayer stop];
+    }
 }
 
 - (void)dealloc
@@ -180,6 +191,7 @@
         [self.audioPlayer stop];
     }
     else {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"didCloseJSQMessagesViewController" object:nil];
         // fade the button from play to pause
         [UIView transitionWithView:self.playButton
                           duration:.2
@@ -198,9 +210,7 @@
 
 - (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player
                        successfully:(BOOL)flag {
-
-    // set progress to full, then fade back to the default state
-    [self stopProgressTimer];
+    
     self.progressView.progress = 1;
     [UIView transitionWithView:self.cachedMediaView
                       duration:.2
@@ -210,8 +220,17 @@
                         self.playButton.selected = NO;
                         self.progressLabel.text = [self timestampString:self.audioPlayer.duration
                                                             forDuration:self.audioPlayer.duration];
+                        
+                        if( self.progressView ) {
+                            self.progressView.progress = 0;
+                            self.playButton.selected = NO;
+                            self.progressLabel.text = [self timestampString:self.audioPlayer.duration
+                                                                forDuration:self.audioPlayer.duration];
+                        }
                     }
                     completion:nil];
+    // set progress to full, then fade back to the default state
+    [self stopProgressTimer];
 }
 
 #pragma mark - JSQMessageMediaData protocol

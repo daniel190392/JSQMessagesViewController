@@ -226,6 +226,8 @@ JSQMessagesKeyboardControllerDelegate>
 
     [_keyboardController endListeningForKeyboard];
     _keyboardController = nil;
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"didCloseJSQMessagesViewController" object:nil];
 }
 
 #pragma mark - Setters
